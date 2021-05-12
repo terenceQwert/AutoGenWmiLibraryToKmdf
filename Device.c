@@ -15,6 +15,7 @@ Environment:
 --*/
 
 #include "driver.h"
+#include "wmi42.h"
 #include "device.tmh"
 
 #ifdef ALLOC_PRAGMA
@@ -65,12 +66,22 @@ Return Value:
         // run under framework verifier mode.
         //
         deviceContext = DeviceGetContext(device);
-
+//        deviceContext = WdfObjectGet_DEVICE_CONTEXT(device);
         //
         // Initialize the context.
         //
         deviceContext->PrivateDeviceData = 0;
 
+        //
+        // Driver Framework always zero initializes an objects context memory
+        //
+//        deviceContext = (PDEVICE_CONTEXT)WdfObjectGet_DEVICE_CONTEXT(device);
+        status = WmiInitialize(device, deviceContext);
+        if (!NT_SUCCESS(status)) {
+          KdPrint(("FireFly: Error initializing WMI 0x%x\n", status));
+          TraceEvents(TRACE_LEVEL_INFORMATION, TRACE_DRIVER, "%!FUNC! WmiInitialize Fail with %x", status);
+          return status;
+        }
         //
         // Create a device interface so that applications can find and talk
         // to us.

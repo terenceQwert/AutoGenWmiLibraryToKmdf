@@ -15,6 +15,7 @@ Environment:
 --*/
 
 #include "driver.h"
+#include "wmi42.h"
 #include "driver.tmh"
 
 #ifdef ALLOC_PRAGMA

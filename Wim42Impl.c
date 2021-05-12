@@ -5,15 +5,20 @@
 //
 
 #include <wdm.h>
+#include <wdf.h>
 #include <wmistr.h>
 #include <wmiguid.h>
 #include <wmilib.h>
+#include "device.h"
 #pragma warning(disable : 4100)
 //
 // Include data header for classes
 #include "wmi42.h"
 
 #define MAKE_THIS_COMPILE
+
+
+
 
 //
 // TODO: Place the contents in this device extension into the driver's
@@ -594,3 +599,175 @@ Return Value:
 
     return(STATUS_SUCCESS);
 }
+
+
+
+#ifdef ALLOC_PRAGMA
+#pragma alloc_text(PAGE, WmiInitialize)
+#pragma alloc_text(PAGE, EvtWmiInstanceQueryInstance)
+#pragma alloc_text(PAGE, EvtWmiInstanceSetInstance)
+#pragma alloc_text(PAGE, EvtWmiInstanceSetItem)
+#endif
+
+NTSTATUS
+EvtWmiInstanceQueryInstance(
+  IN  WDFWMIINSTANCE WmiInstance,
+  IN  ULONG OutBufferSize,
+  IN  PVOID OutBuffer,
+  OUT PULONG BufferUsed
+)
+{
+  THIS_DEVICE_INFORMATION* pInfo;
+
+  PAGED_CODE();
+
+  UNREFERENCED_PARAMETER(OutBufferSize);
+
+  pInfo = InstanceGetInfo(WmiInstance);
+
+  //
+  // Our mininum buffer size has been checked by the Framework
+  // and failed automatically if too small.
+  //
+  *BufferUsed = sizeof(*pInfo);
+
+  RtlCopyMemory(OutBuffer, pInfo, sizeof(*pInfo));
+
+  return STATUS_SUCCESS;
+}
+
+NTSTATUS
+EvtWmiInstanceSetInstance(
+  IN  WDFWMIINSTANCE WmiInstance,
+  IN  ULONG InBufferSize,
+  IN  PVOID InBuffer
+)
+{
+  THIS_DEVICE_INFORMATION* pInfo;
+  ULONG length;
+  NTSTATUS status;
+
+  PAGED_CODE();
+
+  UNREFERENCED_PARAMETER(InBufferSize);
+
+  pInfo = InstanceGetInfo(WmiInstance);
+
+  //
+  // Our mininum buffer size has been checked by the Framework
+  // and failed automatically if too small.
+  //
+  length = sizeof(*pInfo);
+
+  RtlMoveMemory(pInfo, InBuffer, length);
+
+#if 0
+  //
+  // Tell the HID device about the new tail light state
+  //
+  status = FireflySetFeature(
+    WdfObjectGet_DEVICE_CONTEXT(WdfWmiInstanceGetDevice(WmiInstance)),
+    TAILLIGHT_PAGE,
+    TAILLIGHT_FEATURE,
+    pInfo->TailLit
+  );
+#else
+  status = STATUS_SUCCESS;
+#endif
+  return status;
+}
+
+NTSTATUS
+EvtWmiInstanceSetItem(
+  IN  WDFWMIINSTANCE WmiInstance,
+  IN  ULONG DataItemId,
+  IN  ULONG InBufferSize,
+  IN  PVOID InBuffer
+)
+{
+  NTSTATUS status;
+  THIS_DEVICE_INFORMATION* pInfo;
+
+  PAGED_CODE();
+
+  pInfo = InstanceGetInfo(WmiInstance);
+
+  if (DataItemId == 1) {
+    if (InBufferSize < TailList_Size) {
+      return STATUS_BUFFER_TOO_SMALL;
+    }
+
+    pInfo->TailLit = (*(PBOOLEAN)InBuffer) ? TRUE : FALSE;
+#if 0
+    //
+    // Tell the HID device about the new tail light state
+    //
+    status = FireflySetFeature(
+      WdfObjectGet_DEVICE_CONTEXT(WdfWmiInstanceGetDevice(WmiInstance)),
+      TAILLIGHT_PAGE,
+      TAILLIGHT_FEATURE,
+      pInfo->TailLit
+    );
+#else
+    status = STATUS_SUCCESS;
+#endif
+    return status;
+  }
+  else {
+    return STATUS_INVALID_DEVICE_REQUEST;
+  }
+}
+
+
+NTSTATUS
+WmiInitialize(
+  WDFDEVICE Device,
+  PDEVICE_CONTEXT DeviceContext
+)
+{
+  WDF_WMI_PROVIDER_CONFIG providerConfig;
+  WDF_WMI_INSTANCE_CONFIG instanceConfig;
+  WDF_OBJECT_ATTRIBUTES woa;
+  WDFWMIINSTANCE instance;
+  NTSTATUS status;
+  DECLARE_CONST_UNICODE_STRING(mofRsrcName, MOFRESOURCENAME);
+
+  UNREFERENCED_PARAMETER(DeviceContext);
+
+  PAGED_CODE();
+
+  status = WdfDeviceAssignMofResourceName(Device, &mofRsrcName);
+  if (!NT_SUCCESS(status)) {
+    KdPrint(("FireFly: Error in WdfDeviceAssignMofResourceName %x\n", status));
+    return status;
+  }
+
+  WDF_WMI_PROVIDER_CONFIG_INIT(&providerConfig, &Wmi42_GUID);
+  providerConfig.MinInstanceBufferSize = sizeof(THIS_DEVICE_INFORMATION);
+
+  WDF_WMI_INSTANCE_CONFIG_INIT_PROVIDER_CONFIG(&instanceConfig, &providerConfig);
+  instanceConfig.Register = TRUE;
+  instanceConfig.EvtWmiInstanceQueryInstance = EvtWmiInstanceQueryInstance;
+  instanceConfig.EvtWmiInstanceSetInstance = EvtWmiInstanceSetInstance;
+  instanceConfig.EvtWmiInstanceSetItem = EvtWmiInstanceSetItem;
+
+  WDF_OBJECT_ATTRIBUTES_INIT_CONTEXT_TYPE(&woa, THIS_DEVICE_INFORMATION);
+
+  //
+  // No need to store the WDFWMIINSTANCE in the device context because it is
+  // passed back in the WMI instance callbacks and is not referenced outside
+  // of those callbacks.
+  //
+  status = WdfWmiInstanceCreate(Device, &instanceConfig, &woa, &instance);
+
+  if (NT_SUCCESS(status)) {
+    THIS_DEVICE_INFORMATION* info;
+
+    info = InstanceGetInfo(instance);
+    info->TailLit = TRUE;
+  }
+
+  return status;
+}
+
+

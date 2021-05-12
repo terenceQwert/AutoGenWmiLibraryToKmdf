@@ -22,5 +22,14 @@ typedef struct _Wmi42
 } Wmi42, *PWmi42;
 
 #define Wmi42_SIZE (FIELD_OFFSET(Wmi42, TheAnswer) + Wmi42_TheAnswer_SIZE)
+#define MOFRESOURCENAME L"FireflyWMI"
+NTSTATUS
+WmiInitialize(
+  WDFDEVICE       Device,
+  PDEVICE_CONTEXT DeviceContext
+);
 
+EVT_WDF_WMI_INSTANCE_QUERY_INSTANCE EvtWmiInstanceQueryInstance;
+EVT_WDF_WMI_INSTANCE_SET_INSTANCE EvtWmiInstanceSetInstance;
+EVT_WDF_WMI_INSTANCE_SET_ITEM EvtWmiInstanceSetItem;
 #endif

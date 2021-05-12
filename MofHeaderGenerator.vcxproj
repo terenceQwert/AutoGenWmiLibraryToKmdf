@@ -53,6 +53,7 @@
     <ClInclude Include="Queue.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="Trace.h" />
+    <ClInclude Include="wmi42.h" />
   </ItemGroup>
   <ItemGroup>
     <Inf Include="MofHeaderGenerator.inf" />
@@ -185,7 +186,7 @@
       <WppRecorderEnabled>true</WppRecorderEnabled>
       <WppScanConfigurationData Condition="'%(ClCompile.ScanConfigurationData)' == ''">trace.h</WppScanConfigurationData>
       <WppKernelMode>true</WppKernelMode>
-      <WarningLevel>Level4</WarningLevel>
+      <WarningLevel>TurnOffAllWarnings</WarningLevel>
       <TreatWarningAsError>false</TreatWarningAsError>
     </ClCompile>
   </ItemDefinitionGroup>

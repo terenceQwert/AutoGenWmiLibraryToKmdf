@@ -8,3 +8,6 @@
 .vs/MofHeaderGenerator/v16/ipch/AutoPCH/c80ea0bc50b1986b/GENC.ipch
 Debug/
 MofHeaderGenerator.vcxproj.user
+.vs/MofHeaderGenerator/v16/ipch/AutoPCH/3e3422ec8251dc1f/DEVICE.ipch
+.vs/MofHeaderGenerator/v16/ipch/AutoPCH/424b7ce1ee0e94c7/DRIVER.ipch
+.vs/MofHeaderGenerator/v16/ipch/AutoPCH/a99a801e89b8c496/WIM42IMPL.ipch
