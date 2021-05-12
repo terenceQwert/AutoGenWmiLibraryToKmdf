@@ -1,0 +1,1 @@
+.\wmimofck.exe -xbinaryfil -hbinaryfil -cWim42Impl .\wmi42.bmf
